@@ -1,5 +1,6 @@
 import { DevTool } from "@hookform/devtools";
-import { useForm } from "react-hook-form";
+import { useEffect } from "react";
+import { useForm, useFieldArray } from "react-hook-form";
 
 const YouTubeForm = () => {
   const form = useForm({
@@ -7,14 +8,62 @@ const YouTubeForm = () => {
       username: "Batman",
       email: "",
       channel: "",
+      social: {
+        twitter: "",
+        facebook: "",
+      },
+      phoneNumbers: ["", ""],
+      phNumbers: [{ number: "" }],
+      age: 0,
+      dob: new Date(),
     },
   });
-  const { register, control, handleSubmit, formState } = form;
-  const { errors } = formState;
+  const {
+    register,
+    control,
+    handleSubmit,
+    formState,
+    watch,
+    getValues,
+    setValue,
+  } = form;
+  const { errors, touchedFields, dirtyFields, isDirty } = formState;
+  const { fields, append, remove } = useFieldArray({
+    name: "phNumbers",
+    control,
+  });
 
   const onSubmit = (data) => {
     console.log("Form Submitted", data);
   };
+
+  const handleGetValues = () => {
+    // console.log("Specific Get value", getValues("social.facebook"));
+    // console.log(getValues(["age", "social.facebook"]));
+    console.log("Get values", getValues());
+  };
+
+  const handleSetValue = () => {
+    setValue("username", "", {
+      shouldValidate: true,
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+  };
+
+  useEffect(() => {
+    // can make any check against any form field value and carry out a side effect (this will not get rerendered on change of values)
+    const subscription = watch((value) => {
+      console.log(value, "Watching");
+    });
+
+    return () => subscription.unsubscribe();
+  }, [watch]);
+
+  // This will watch every form field values and will cause rerender to occur
+  // const watchForm = watch()
+
+  console.log({ touchedFields, dirtyFields, isDirty });
 
   return (
     <div>
@@ -79,7 +128,137 @@ const YouTubeForm = () => {
           <p className="error">{errors.channel?.message}</p>
         </div>
 
+        <div className="form-control">
+          <label htmlFor="twitter">Twitter</label>
+          <input
+            type="text"
+            id="twitter"
+            {...register("social.twitter", {
+              disabled: true,
+              required: {
+                value: true,
+                message: "Twitter is required",
+              },
+            })}
+          />
+          <p className="error">{errors.social?.twitter?.message}</p>
+        </div>
+
+        <div className="form-control">
+          <label htmlFor="facebook">Facebook</label>
+          <input
+            type="text"
+            id="facebook"
+            {...register("social.facebook", {
+              required: {
+                value: true,
+                message: "Facebook is required",
+              },
+            })}
+          />
+          <p className="error">{errors.social?.facebook?.message}</p>
+        </div>
+
+        <div className="form-control">
+          <label htmlFor="primary-phone">Primary phone number</label>
+          <input
+            type="text"
+            id="primary-phone"
+            {...register("phoneNumbers.0", {
+              required: {
+                value: true,
+                message: "Primary phone number is required",
+              },
+            })}
+          />
+          <p className="error">
+            {errors.phoneNumbers && errors.phoneNumbers[0]?.message}
+          </p>
+        </div>
+
+        <div className="form-control">
+          <label htmlFor="secondary-phone">Secondary phone number</label>
+          <input
+            type="text"
+            id="secondary-phone"
+            {...register("phoneNumbers.1", {
+              required: {
+                value: true,
+                message: "Secondary phone number is required",
+              },
+            })}
+          />
+          <p className="error">
+            {errors.phoneNumbers && errors.phoneNumbers[1]?.message}
+          </p>
+        </div>
+
+        <div>
+          <label>List of phone numbers</label>
+          <div>
+            {fields.map((field, index) => {
+              return (
+                <div className="form-control" key={field.id}>
+                  <input
+                    type="text"
+                    {...register(`phNumbers.${index}.number`)}
+                  />
+                  {index > 0 && (
+                    <button type="button" onClick={() => remove(index)}>
+                      Remove
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+
+            <button type="button" onClick={() => append({ number: "" })}>
+              Add phone number
+            </button>
+          </div>
+        </div>
+
+        <div className="form-control">
+          <label htmlFor="age">Age</label>
+          <input
+            type="number"
+            id="age"
+            {...register("age", {
+              valueAsNumber: true,
+              required: {
+                value: true,
+                message: "Age is required",
+              },
+            })}
+          />
+          <p className="error">{errors.age?.message}</p>
+        </div>
+
+        <div className="form-control">
+          <label htmlFor="dob">Date of birth</label>
+          <input
+            type="date"
+            id="dob"
+            {...register("dob", {
+              valueAsDate: true,
+              required: {
+                value: true,
+                message: "Date of birth is required",
+              },
+            })}
+          />
+          <p className="error">{errors.dob?.message}</p>
+        </div>
+
         <button>Submit</button>
+
+        <button type="button" onClick={handleGetValues}>
+          Get values
+        </button>
+
+        <button type="button" onClick={handleSetValue}>
+          Set value
+        </button>
       </form>
       <DevTool control={control} />
     </div>
