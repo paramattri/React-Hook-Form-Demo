@@ -26,8 +26,24 @@ const YouTubeForm = () => {
     watch,
     getValues,
     setValue,
+    reset,
+    trigger,
   } = form;
-  const { errors, touchedFields, dirtyFields, isDirty } = formState;
+
+  const {
+    errors,
+    touchedFields,
+    dirtyFields,
+    isDirty,
+    isValid,
+    isSubmitting,
+    isSubmitted,
+    isSubmitSuccessful,
+    submitCount,
+  } = formState;
+
+  console.log({ isSubmitting, isSubmitted, isSubmitSuccessful, submitCount });
+
   const { fields, append, remove } = useFieldArray({
     name: "phNumbers",
     control,
@@ -35,6 +51,10 @@ const YouTubeForm = () => {
 
   const onSubmit = (data) => {
     console.log("Form Submitted", data);
+  };
+
+  const onError = (errors) => {
+    console.log("Form errors", errors);
   };
 
   const handleGetValues = () => {
@@ -60,14 +80,18 @@ const YouTubeForm = () => {
     return () => subscription.unsubscribe();
   }, [watch]);
 
+  useEffect(() => {
+    if (isSubmitSuccessful) reset();
+  }, [isSubmitSuccessful]);
+
   // This will watch every form field values and will cause rerender to occur
   // const watchForm = watch()
 
-  console.log({ touchedFields, dirtyFields, isDirty });
+  // console.log({ touchedFields, dirtyFields, isDirty, isValid });
 
   return (
     <div>
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form onSubmit={handleSubmit(onSubmit, onError)} noValidate>
         <div className="form-control">
           <label htmlFor="username">Username</label>
           <input
@@ -106,6 +130,13 @@ const YouTubeForm = () => {
                     !fieldValue.endsWith("baddomain.com") ||
                     "This domain is not supported"
                   );
+                },
+                emailAvailable: async (fieldValue) => {
+                  const response = await fetch(
+                    `https://jsonplaceholder.typicode.com/users?email=${fieldValue}`
+                  );
+                  const data = await response.json();
+                  return data.length === 0 || "Email already exists";
                 },
               },
             })}
@@ -250,7 +281,15 @@ const YouTubeForm = () => {
           <p className="error">{errors.dob?.message}</p>
         </div>
 
-        <button>Submit</button>
+        <button disabled={!isDirty || !isValid || isSubmitting}>Submit</button>
+
+        <button type="button" onClick={() => reset()}>
+          Reset
+        </button>
+
+        <button type="button" onClick={() => trigger()}>
+          Validate
+        </button>
 
         <button type="button" onClick={handleGetValues}>
           Get values
